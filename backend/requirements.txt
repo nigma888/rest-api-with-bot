@@ -1,0 +1,9 @@
+fastapi
+sqlalchemy
+uvicorn
+psycopg2
+alembic
+aiogram
+aiofiles
+websockets
+python-multipart

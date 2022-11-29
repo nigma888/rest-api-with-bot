@@ -1,0 +1,89 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:14
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=$DB_NAME
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASSWORD
+    networks:
+      - nginx-proxy
+
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend:/backend
+      - ./backend/images:/images
+      - ./backend/images/profile_pic:/images/profile_pic
+    environment:
+      - ADMIN_URL=$ADMIN_URL
+      - BOT_TOKEN=$BOT_TOKEN
+      - BOT_WS_URL=$BOT_WS_URL
+      - DB_NAME=$DB_NAME
+      - DB_PASSWORD=$DB_PASSWORD
+      - DB_USER=$DB_USER
+      - SECRET_TOKEN_WS=$SECRET_TOKEN_WS
+    networks:
+      - nginx-proxy
+    depends_on:
+      - db
+
+  bot:
+    build: ./backend
+    volumes:
+      - ./backend:/backend
+      - ./backend/images:/images
+      - ./backend/images/profile_pic:/images/profile_pic
+    environment:
+      - SERVICE=bot
+      - ADMIN_URL=$ADMIN_URL
+      - BOT_TOKEN=$BOT_TOKEN
+      - BOT_WS_URL=$BOT_WS_URL
+      - DB_NAME=$DB_NAME
+      - DB_PASSWORD=$DB_PASSWORD
+      - DB_USER=$DB_USER
+      - SECRET_TOKEN_WS=$SECRET_TOKEN_WS
+    networks:
+      - nginx-proxy
+    depends_on:
+      - backend
+
+  nginx:
+    build: ./nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/nginx
+      - ./backend/storage:/storage
+    networks:
+      - nginx-proxy
+    depends_on:
+      - backend
+      - adminer
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - nginx-proxy
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
+
+networks:
+  nginx-proxy:
